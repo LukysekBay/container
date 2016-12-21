@@ -1,0 +1,22 @@
+web:
+    image: nginx:latest
+    ports:
+        - "8088:80"
+    volumes:
+        - ./www:/www
+        - ./site.conf:/etc/nginx/conf.d/site.conf
+    links:
+        - php
+
+php:
+    image: php:7-fpm
+    volumes:
+        - ./www:/www
+
+nodejs
+    build: ./nodejs
+    dockerfile: Dockerfile
+    image: lukysekbay/node-web-app
+    ports:
+        - "8080:8080"
+
