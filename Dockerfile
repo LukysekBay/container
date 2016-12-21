@@ -64,8 +64,7 @@ RUN sed -i -e "s/v3.4/edge/" /etc/apk/repositories && apk update && \
     mkdir -p /etc/letsencrypt/webrootauth && \
     apk del gcc musl-dev linux-headers libffi-dev augeas-dev python-dev
 
-RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN rm -rf /var/cache/apk/*  /tmp/*
 
 ADD conf/supervisord.conf /etc/supervisord.conf
 
