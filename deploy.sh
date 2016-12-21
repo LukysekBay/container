@@ -9,18 +9,20 @@ configure_aws_cli(){
     aws configure set default.output json
 }
 
+# Push docker image to ECR registry
 push_ecr_image(){
     eval $(aws ecr get-login --region $AWS_REGION)
     docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_PROJECT_NAME:$CIRCLE_PROJECT_REPONAME-$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM-$CIRCLE_SHA1
 }
 
+# Deploy cluster
 deploy_cluster() {
 
     family="$AWS_PROJECT_NAME-$CIRCLE_PROJECT_REPONAME"
 
     make_task_def
     register_definition
-    if [[ $(aws ecs update-service --cluster $AWS_PROJECT_NAME --service $family-service --task-definition $revision | \
+    if [[ $(aws ecs update-service --cluster $AWS_PROJECT_NAME --service $family --task-definition $revision | \
                    $JQ '.service.taskDefinition') != $revision ]]; then
         echo "Error updating service."
         return 1
@@ -29,7 +31,7 @@ deploy_cluster() {
     # wait for older revisions to disappear
     # not really necessary, but nice for demos
     for attempt in {1..30}; do
-        if stale=$(aws ecs describe-services --cluster $AWS_PROJECT_NAME --services $family-service | \
+        if stale=$(aws ecs describe-services --cluster $AWS_PROJECT_NAME --services $family | \
                        $JQ ".services[0].deployments | .[] | select(.taskDefinition != \"$revision\") | .taskDefinition"); then
             echo "Waiting for stale deployments:"
             echo "$stale"
@@ -43,15 +45,15 @@ deploy_cluster() {
     return 1
 }
 
-
+# Create task definition
 make_task_def(){
     task_template='[
 	{
 	    "name": "%s",
 	    "image": "%s.dkr.ecr.%s.amazonaws.com/%s:%s",
 	    "essential": true,
-	    "memory": 600,
-	    "cpu": 400,
+	    "memory": 200,
+	    "cpu": 10,
 	    "portMappings": [
 		{
 		    "containerPort": 80,
@@ -65,6 +67,7 @@ make_task_def(){
     echo "Task def: $task_def"
 }
 
+# Register Task definition
 register_definition() {
 
     if revision=$(aws ecs register-task-definition --container-definitions "$task_def" --family $family | $JQ '.taskDefinition.taskDefinitionArn'); then
