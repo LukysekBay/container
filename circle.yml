@@ -1,0 +1,25 @@
+
+machine:
+ environment:
+   AWS_ACCOUNT_ID: "560613464802"
+   AWS_REGION: "eu-central-1"
+   AWS_PROJECT_NAME: "dev-robeeto"
+   
+ services:
+   - docker
+
+dependencies:
+ override:
+   - docker info
+   - docker build --rm=false -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_PROJECT_NAME:$CIRCLE_PROJECT_REPONAME-$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM-$CIRCLE_SHA1 .
+
+test:
+ post:
+   - docker run -d -p 80:80 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_PROJECT_NAME:$CIRCLE_PROJECT_REPONAME-$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM-$CIRCLE_SHA1; sleep 10
+   - curl --retry 10 --retry-delay 5 localhost:80 | grep -i "php"
+
+deployment:
+  prod:
+    branch: master
+    commands:
+      - ./deploy.sh
