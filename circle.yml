@@ -4,22 +4,19 @@ machine:
    AWS_REGION: "eu-central-1"
    AWS_PROJECT_NAME: "dev-robeeto-container"
 
+  pre:
+    - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+    - pip install docker-compose
+
  services:
    - docker
-
-dependencies:
- pre:
-   - pip install docker-compose
- override:
-   - docker info
-#   - docker build --rm=false -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_PROJECT_NAME:$CIRCLE_PROJECT_REPONAME-$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM-$CIRCLE_SHA1 .
 
 test:
  pre:
    - docker-compose up -d
  post:
-#   - docker run -d -p 8080:8080 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$AWS_PROJECT_NAME:$CIRCLE_PROJECT_REPONAME-$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM-$CIRCLE_SHA1; sleep 10
    - curl --retry 10 --retry-delay 5 localhost:8088
+
 
 deployment:
   prod:
